@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const AddScholarship = () => {
   // State variables for form inputs
@@ -10,6 +11,7 @@ const AddScholarship = () => {
   const [donorEmail, setDonorEmail] = useState('');
   const [donorPhone, setDonorPhone] = useState('');
   const [studentName, setStudentName] = useState('');
+  const [studentId, setStudentId] = useState('');
   const [studentSchool, setStudentSchool] = useState('');
   const [studentClass, setStudentClass] = useState('');
   const [studentDistrict, setStudentDistrict] = useState('');
@@ -18,6 +20,7 @@ const AddScholarship = () => {
   const [monthlyAmount, setMonthlyAmount] = useState(4000);
 
   const rooturl = process.env.REACT_APP_ROOTURL;
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -55,20 +58,23 @@ const AddScholarship = () => {
       }
 
       // Post Student if needed
-      const studentResponse = await fetch(rooturl+'students', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          student_name: studentName,
-          student_school: studentSchool,
-          student_class: studentClass,
-          student_district: studentDistrict,
-          student_phone: studentPhone
-        })
-      });
+      let actualStudentId = studentId;
+      if(!studentId){
+        const studentResponse = await fetch(rooturl+'students', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            student_name: studentName,
+            student_school: studentSchool,
+            student_class: studentClass,
+            student_district: studentDistrict,
+            student_phone: studentPhone
+          })
+        });
 
-      const studentData = await studentResponse.json();
-      const studentId = studentData.id;
+        const studentData = await studentResponse.json();
+        actualStudentId = studentData.id;
+      }
 
       // Post Scholarship
       await fetch(rooturl+'scholarships', {
@@ -77,29 +83,14 @@ const AddScholarship = () => {
         body: JSON.stringify({
           martyr_id: martyrId,
           donor_id: actualDonorId,
-          student_id: studentId,
+          student_id: actualStudentId,
           status,
           monthly_amount: monthlyAmount
         })
       });
 
-      // Clear form fields
-      setMartyrName('');
-      setMartyrPlace('');
-      setMartyrDate('');
-      setDonorId('');
-      setDonorName('');
-      setDonorEmail('');
-      setDonorPhone('');
-      setStudentName('');
-      setStudentSchool('');
-      setStudentClass('');
-      setStudentDistrict('');
-      setStudentPhone('');
-      setStatus('Inactive');
-      setMonthlyAmount('');
-
       alert('Scholarship added successfully!');
+      navigate('/');
     } catch (error) {
       console.error('Error:', error);
       alert('Failed to add scholarship');
@@ -179,6 +170,16 @@ const AddScholarship = () => {
             className="form-control"
             value={donorPhone}
             onChange={(e) => setDonorPhone(e.target.value)}
+          />
+        </div>
+        <div className="mb-3">
+          <label htmlFor="studentId" className="form-label">Existing Student ID (Leave empty if new)</label>
+          <input
+            type="text"
+            id="studentId"
+            className="form-control"
+            value={studentId}
+            onChange={(e) => setStudentId(e.target.value)}
           />
         </div>
         <div className="mb-3">

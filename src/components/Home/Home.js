@@ -7,7 +7,6 @@ const Home = () => {
   const [martyrs, setMartyrs] = useState([]);
   const [donors, setDonors] = useState([]);
   const [students, setStudents] = useState([]);
-  const [disbursements, setDisbursements] = useState([]);
 
   // State variables for modals
   const [showScholarshipModal, setShowScholarshipModal] = useState(false);
@@ -29,27 +28,21 @@ const Home = () => {
     const fetchMartyrs = fetch(rooturl+'martyrs').then(response => response.json());
     const fetchDonors = fetch(rooturl+'donors').then(response => response.json());
     const fetchStudents = fetch(rooturl+'students').then(response => response.json());
-    const fetchDisbursements = fetch(rooturl+'disbursements').then(response => response.json());
 
-    Promise.all([fetchScholarships, fetchMartyrs, fetchDonors, fetchStudents, fetchDisbursements])
-      .then(([scholarshipsData, martyrsData, donorsData, studentsData, disbursementsData]) => {
+    Promise.all([fetchScholarships, fetchMartyrs, fetchDonors, fetchStudents])
+      .then(([scholarshipsData, martyrsData, donorsData, studentsData]) => {
         setScholarships(scholarshipsData);
         setMartyrs(martyrsData);
         setDonors(donorsData);
         setStudents(studentsData);
-        setDisbursements(disbursementsData);
       })
       .catch(error => console.error('Error fetching data:', error));
   }, [rooturl]);
 
+  const getSclById = (id) => scholarships.find(scholarship => scholarship.id === id);
   const getMartyrById = (id) => martyrs.find(martyr => martyr.id === id);
   const getDonorById = (id) => donors.find(donor => donor.id === id);
   const getStudentById = (id) => students.find(student => student.id === id);
-  const getLastDisbursementForScholarship = (scholarshipId) => {
-    const relevantDisbursements = disbursements.filter(disbursement => disbursement.scholarship_id === scholarshipId);
-    const lastDisbursement = relevantDisbursements.reduce((max, disbursement) => disbursement.id > max.id ? disbursement : max, { id: -1 });
-    return lastDisbursement;
-  };
 
   const handleEditScl = (scholarship) => {
     setCurrentScholarship(scholarship);
@@ -135,6 +128,34 @@ const Home = () => {
       .catch(error => console.error('Error updating student:', error));
   };
 
+  const handleDelete = async (scl_id) => {
+    const scl = getSclById(scl_id);
+    const confirmDelete = window.confirm('Are you sure you want to delete this Scholarship?');
+  
+    if (confirmDelete) {
+      try {
+        await fetch(rooturl + `scholarships/${scl_id}`, {
+          method: 'DELETE'
+        });
+
+        // one scl for one martyr, so martyr should be deleted along with scl
+        await fetch(rooturl + `martyrs/${scl.martyr_id}`, {
+          method: 'DELETE'
+        });
+  
+        // Update the state to remove the deleted scholarship
+        setScholarships(prevScholarships => prevScholarships.filter(scholarship => scholarship.id !== scl_id));
+        
+        // Optionally, navigate or show a success message
+        alert('Deleted successfully');
+      } catch (error) {
+        console.error('Error deleting scholarship:', error);
+      }
+    }
+  };
+  
+
+
   return (
     <div className="container mt-4 mb-5">
       <div className="d-flex justify-content-center align-items-center mb-4">
@@ -149,7 +170,6 @@ const Home = () => {
           const martyr = getMartyrById(scholarship.martyr_id);
           const donor = getDonorById(scholarship.donor_id);
           const student = getStudentById(scholarship.student_id);
-          const lastDisbursement = getLastDisbursementForScholarship(scholarship.id);
 
           return (
             <div key={scholarship.id} className="col-md-4 mb-4">
@@ -210,19 +230,22 @@ const Home = () => {
                   <strong>Donor ID:</strong> {scholarship.donor_id}
                   </p>
                   <p className="card-text">
+                  <strong>Student ID:</strong> {scholarship.student_id}
+                  </p>
+                  <p className="card-text">
                   <strong>Amount:</strong> {scholarship.monthly_amount} BDT
                   </p>
                   <p className="card-text">
                     <strong>Status:</strong> {scholarship.status}
                   </p>
-                  <p className="card-text">
-                      <strong>Last Disb:</strong> {lastDisbursement.date}
-                  </p>
 
-                  <button 
-                    className="btn btn-primary"
-                    onClick={() => navigate(`/disbursements?scl_id=${scholarship.id}`)}
-                  >All Disbursements</button>
+                  <div className='d-flex gap-2 justify-content-center align-items-center mb-4'>
+                    <button 
+                      className="btn btn-primary"
+                      onClick={() => navigate(`/disbursements?scl_id=${scholarship.id}`)}
+                    >All Disb</button>
+                    <button className="btn btn-danger" onClick={()=>handleDelete(scholarship.id)}>Delete</button>
+                  </div>
 
                 </div>
               </div>
@@ -250,6 +273,16 @@ const Home = () => {
                       id="donor-id"
                       value={currentScholarship.donor_id}
                       onChange={(e) => setCurrentScholarship({ ...currentScholarship, donor_id: parseInt(e.target.value, 10)})}
+                    />
+                  </div>
+                  <div className="mb-3">
+                    <label htmlFor="donor-id" className="form-label">Student ID</label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      id="student-id"
+                      value={currentScholarship.student_id}
+                      onChange={(e) => setCurrentScholarship({ ...currentScholarship, student_id: parseInt(e.target.value, 10)})}
                     />
                   </div>
                   <div className="mb-3">
