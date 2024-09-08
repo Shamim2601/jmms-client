@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const AddScholarship = () => {
@@ -19,15 +19,33 @@ const AddScholarship = () => {
   const [status, setStatus] = useState('Inactive');
   const [monthlyAmount, setMonthlyAmount] = useState(4000);
 
+  // State for dropdown options
+  const [donorOptions, setDonorOptions] = useState([]);
+  const [studentOptions, setStudentOptions] = useState([]);
+
   const rooturl = process.env.REACT_APP_ROOTURL;
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Fetch existing donors
+    fetch(rooturl + 'donors')
+      .then(response => response.json())
+      .then(data => setDonorOptions(data))
+      .catch(error => console.error('Error fetching donors:', error));
+
+    // Fetch existing students
+    fetch(rooturl + 'students')
+      .then(response => response.json())
+      .then(data => setStudentOptions(data))
+      .catch(error => console.error('Error fetching students:', error));
+  }, [rooturl]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
       // Post Martyr
-      const martyrResponse = await fetch(rooturl+'martyrs', {
+      const martyrResponse = await fetch(rooturl + 'martyrs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -43,7 +61,7 @@ const AddScholarship = () => {
       // Post Donor if needed
       let actualDonorId = donorId;
       if (!donorId) {
-        const donorResponse = await fetch(rooturl+'donors', {
+        const donorResponse = await fetch(rooturl + 'donors', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -59,8 +77,8 @@ const AddScholarship = () => {
 
       // Post Student if needed
       let actualStudentId = studentId;
-      if(!studentId){
-        const studentResponse = await fetch(rooturl+'students', {
+      if (!studentId) {
+        const studentResponse = await fetch(rooturl + 'students', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -77,7 +95,7 @@ const AddScholarship = () => {
       }
 
       // Post Scholarship
-      await fetch(rooturl+'scholarships', {
+      await fetch(rooturl + 'scholarships', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -127,20 +145,26 @@ const AddScholarship = () => {
             type="text"
             id="martyrDate"
             className="form-control"
-            placeholder='dd-mm-yyyy'
+            placeholder="dd-mm-yyyy"
             value={martyrDate}
             onChange={(e) => setMartyrDate(e.target.value)}
           />
         </div>
         <div className="mb-3">
           <label htmlFor="donorId" className="form-label">Existing Donor ID (Leave empty if new)</label>
-          <input
-            type="text"
+          <select
             id="donorId"
-            className="form-control"
+            className="form-select"
             value={donorId}
             onChange={(e) => setDonorId(e.target.value)}
-          />
+          >
+            <option value="">Select an existing donor ID</option>
+            {donorOptions.map((donor) => (
+              <option key={donor.id} value={donor.id}>
+                {donor.id} - {donor.donor_name}
+              </option>
+            ))}
+          </select>
         </div>
         <div className="mb-3">
           <label htmlFor="donorName" className="form-label">Donor Name</label>
@@ -174,13 +198,19 @@ const AddScholarship = () => {
         </div>
         <div className="mb-3">
           <label htmlFor="studentId" className="form-label">Existing Student ID (Leave empty if new)</label>
-          <input
-            type="text"
+          <select
             id="studentId"
-            className="form-control"
+            className="form-select"
             value={studentId}
             onChange={(e) => setStudentId(e.target.value)}
-          />
+          >
+            <option value="">Select an existing student ID</option>
+            {studentOptions.map((student) => (
+              <option key={student.id} value={student.id}>
+                {student.id} - {student.student_name}
+              </option>
+            ))}
+          </select>
         </div>
         <div className="mb-3">
           <label htmlFor="studentName" className="form-label">Student Name</label>
@@ -242,8 +272,6 @@ const AddScholarship = () => {
           >
             <option value="Inactive">Inactive</option>
             <option value="Active">Active</option>
-            <option value="Paused">Paused</option>
-            <option value="Completed">Completed</option>
           </select>
         </div>
         <div className="mb-3">
@@ -253,13 +281,13 @@ const AddScholarship = () => {
             id="monthlyAmount"
             className="form-control"
             value={monthlyAmount}
-            onChange={(e) => setMonthlyAmount(e.target.value)}
+            onChange={(e) => setMonthlyAmount(Number(e.target.value))}
           />
         </div>
         <button type="submit" className="btn btn-primary">Add Scholarship</button>
       </form>
     </div>
   );
-}
+};
 
 export default AddScholarship;

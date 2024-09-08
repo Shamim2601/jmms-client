@@ -1,8 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const Home = () => {
   const rooturl = process.env.REACT_APP_ROOTURL;
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const sclId = queryParams.get('scl_id');
+  const martyrId = queryParams.get('martyr_id');
+  const donorId = queryParams.get('donor_id');
+  const studentId = queryParams.get('student_id');
+
   const [scholarships, setScholarships] = useState([]);
   const [martyrs, setMartyrs] = useState([]);
   const [donors, setDonors] = useState([]);
@@ -21,6 +28,7 @@ const Home = () => {
   const [currentStudent, setCurrentStudent] = useState({});
 
   const navigate = useNavigate(); // Hook for navigation
+  
 
   useEffect(() => {
     // Fetch all data from the APIs
@@ -31,13 +39,28 @@ const Home = () => {
 
     Promise.all([fetchScholarships, fetchMartyrs, fetchDonors, fetchStudents])
       .then(([scholarshipsData, martyrsData, donorsData, studentsData]) => {
-        setScholarships(scholarshipsData);
         setMartyrs(martyrsData);
         setDonors(donorsData);
         setStudents(studentsData);
+
+        if(sclId){
+          const filtScls = scholarshipsData.filter(scholarship => scholarship.id === parseInt(sclId));
+          setScholarships(filtScls);
+        }else if(martyrId){
+          const filtScls = scholarshipsData.filter(scholarship => scholarship.martyr_id === parseInt(martyrId));
+          setScholarships(filtScls);
+        }else if(donorId){
+          const filtScls = scholarshipsData.filter(scholarship => scholarship.donor_id === parseInt(donorId));
+          setScholarships(filtScls);
+        }else if(studentId){
+          const filtScls = scholarshipsData.filter(scholarship => scholarship.student_id === parseInt(studentId));
+          setScholarships(filtScls);
+        }else{
+          setScholarships(scholarshipsData);
+        }
       })
       .catch(error => console.error('Error fetching data:', error));
-  }, [rooturl]);
+  }, [rooturl, sclId, martyrId, donorId, studentId]);
 
   const getSclById = (id) => scholarships.find(scholarship => scholarship.id === id);
   const getMartyrById = (id) => martyrs.find(martyr => martyr.id === id);
@@ -227,6 +250,12 @@ const Home = () => {
                     <button className="btn btn-secondary btn-sm ms-2" onClick={() => handleEditScl(scholarship)}>Edit</button>
                   </h6>
                   <p className="card-text">
+                  <strong>Scl ID:</strong> {scholarship.id}
+                  </p>
+                  <p className="card-text">
+                  <strong>Martyr ID:</strong> {scholarship.martyr_id}
+                  </p>
+                  <p className="card-text">
                   <strong>Donor ID:</strong> {scholarship.donor_id}
                   </p>
                   <p className="card-text">
@@ -267,24 +296,37 @@ const Home = () => {
                 <form>
                   <div className="mb-3">
                     <label htmlFor="donor-id" className="form-label">Donor ID</label>
-                    <input
-                      type="number"
-                      className="form-control"
+                    <select
                       id="donor-id"
+                      className="form-select"
                       value={currentScholarship.donor_id}
                       onChange={(e) => setCurrentScholarship({ ...currentScholarship, donor_id: parseInt(e.target.value, 10)})}
-                    />
+                    >
+                      <option value="">Select Donor ID</option>
+                      {donors.map((donor) => (
+                        <option key={donor.id} value={donor.id}>
+                          {donor.id} - {donor.donor_name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div className="mb-3">
-                    <label htmlFor="donor-id" className="form-label">Student ID</label>
-                    <input
-                      type="number"
-                      className="form-control"
+                    <label htmlFor="student-id" className="form-label">Student ID</label>
+                    <select
                       id="student-id"
+                      className="form-select"
                       value={currentScholarship.student_id}
                       onChange={(e) => setCurrentScholarship({ ...currentScholarship, student_id: parseInt(e.target.value, 10)})}
-                    />
+                    >
+                      <option value="">Select Student ID</option>
+                      {students.map((student) => (
+                        <option key={student.id} value={student.id}>
+                          {student.id} - {student.student_name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
+
                   <div className="mb-3">
                     <label htmlFor="status" className="form-label">Status</label>
                     <select

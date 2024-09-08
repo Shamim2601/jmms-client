@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const Students = () => {
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const studentId = queryParams.get('id');
+
   const [students, setStudents] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [newStudent, setNewStudent] = useState({
@@ -12,29 +17,43 @@ const Students = () => {
   });
 
   const rooturl = process.env.REACT_APP_ROOTURL;
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetch(rooturl+'students')
       .then(response => response.json())
-      .then(data => setStudents(data))
+      .then(data => {
+        if(studentId){
+          const filtStudents = data.filter(student => student.id === parseInt(studentId));
+          setStudents(filtStudents);
+        }else{
+          setStudents(data);
+        }
+      })
       .catch(error => console.error('Error fetching students:', error));
-  }, [rooturl]);
+  }, [rooturl, studentId]);
 
   const handleDelete = (id) => {
-    // Optional: Make a DELETE request to the server
-    fetch(rooturl+`students/${id}`, {
-      method: 'DELETE',
-    })
-    .then(response => {
-      if (response.ok) {
-        // Remove student from the local state
-        setStudents(students.filter(student => student.id !== id));
-      } else {
-        console.error('Failed to delete student');
-      }
-    })
-    .catch(error => console.error('Error deleting student:', error));
+    // Show confirmation dialog to the user
+    const isConfirmed = window.confirm('Are you sure you want to delete this student?');
+  
+    if (isConfirmed) {
+      // If confirmed, proceed with deletion
+      fetch(rooturl + `students/${id}`, {
+        method: 'DELETE',
+      })
+      .then(response => {
+        if (response.ok) {
+          // Remove student from the local state
+          setStudents(students.filter(student => student.id !== id));
+        } else {
+          console.error('Failed to delete student');
+        }
+      })
+      .catch(error => console.error('Error deleting student:', error));
+    }
   };
+  
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -74,7 +93,7 @@ const Students = () => {
         </button>
       </div>
 
-      <table className='table table-striped table-bordered'>
+      <table className='table table-striped table-bordered text-center'>
         <thead className='thead-dark'>
           <tr>
             <th>ID</th>
@@ -97,13 +116,11 @@ const Students = () => {
                 <td>{student.student_district}</td>
                 <td><a href={`tel:${student.student_phone}`}>{student.student_phone}</a></td>
                 <td>
-                  <button
-                    className='btn btn-danger btn-sm'
-                    onClick={() => handleDelete(student.id)}
-                  >
-                    Delete
-                  </button>
-                </td> {/* Delete button */}
+                  <div className='d-flex justify-content-center align-items-center gap-2 mb-4'>
+                    <button className='btn btn-primary btn-sm' onClick={() => navigate(`/?student_id=${student.id}`)}>View Scl</button>
+                    <button className='btn btn-danger btn-sm' onClick={() => handleDelete(student.id)}>Delete</button>
+                  </div>
+                </td>
               </tr>
             ))
           }

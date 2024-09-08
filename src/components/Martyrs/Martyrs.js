@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const Martyrs = () => {
   const [martyrs, setMartyrs] = useState([]);
   const rooturl = process.env.REACT_APP_ROOTURL;
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Fetch data from the API
@@ -12,29 +14,13 @@ const Martyrs = () => {
       .catch(error => console.error('Error fetching data:', error));
   }, [rooturl]);
 
-  const handleDelete = (id) => {
-    // Optional: Make a DELETE request to the server
-    fetch(rooturl+`martyrs/${id}`, {
-      method: 'DELETE',
-    })
-    .then(response => {
-      if (response.ok) {
-        // Remove martyr from the local state
-        setMartyrs(martyrs.filter(martyr => martyr.id !== id));
-      } else {
-        console.error('Failed to delete martyr');
-      }
-    })
-    .catch(error => console.error('Error deleting martyr:', error));
-  };
-
   return (
     <div className="container mt-4">
       <div className="d-flex justify-content-center align-items-center mb-4">
         <h1 className="mb-0">Martyrs</h1>
         <span className="badge bg-secondary fs-5 ms-2">{martyrs.length} Total</span>
       </div>
-      <table className="table table-striped table-bordered">
+      <table className="table table-striped table-bordered text-center">
         <thead className="thead-dark">
           <tr>
             <th>ID</th>
@@ -53,10 +39,10 @@ const Martyrs = () => {
               <td>{martyr.martyr_date}</td>
               <td>
                 <button
-                  className='btn btn-danger btn-sm'
-                  onClick={() => handleDelete(martyr.id)}
+                  className='btn btn-primary btn-sm'
+                  onClick={() => navigate(`/?martyr_id=${martyr.id}`)}
                 >
-                  Delete
+                  View Scl
                 </button>
               </td> {/* Delete button */}
             </tr>

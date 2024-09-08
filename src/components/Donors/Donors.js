@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const Donors = () => {
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const donorId = queryParams.get('id');
+
   const [donors, setDonors] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [newDonor, setNewDonor] = useState({
@@ -10,26 +15,38 @@ const Donors = () => {
   });
 
   const rooturl = process.env.REACT_APP_ROOTURL;
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetch(rooturl+'donors')
       .then(response => response.json())
-      .then(data => setDonors(data))
+      .then(data => {
+        if(donorId){
+          const filtDonors = data.filter(donor => donor.id === parseInt(donorId));
+          setDonors(filtDonors);
+        }else{
+          setDonors(data);
+        }
+      })
       .catch(error => console.error('Error fetching donors:', error));
-  }, [rooturl]);
+  }, [rooturl, donorId]);
 
   const handleDelete = (id) => {
-    fetch(rooturl+`donors/${id}`, {
-      method: 'DELETE',
-    })
-    .then(response => {
-      if (response.ok) {
-        setDonors(donors.filter(donor => donor.id !== id));
-      } else {
-        console.error('Failed to delete donor');
-      }
-    })
-    .catch(error => console.error('Error deleting donor:', error));
+    const isConfirmed = window.confirm('Are you sure you want to delete this Donor?');
+
+    if(isConfirmed){
+      fetch(rooturl+`donors/${id}`, {
+        method: 'DELETE',
+      })
+      .then(response => {
+        if (response.ok) {
+          setDonors(donors.filter(donor => donor.id !== id));
+        } else {
+          console.error('Failed to delete donor');
+        }
+      })
+      .catch(error => console.error('Error deleting donor:', error));
+    }
   };
 
   const handleInputChange = (e) => {
@@ -64,7 +81,7 @@ const Donors = () => {
         </button>
       </div>
 
-      <table className='table table-striped table-bordered'>
+      <table className='table table-striped table-bordered text-center'>
         <thead className='thead-dark'>
           <tr>
             <th>ID</th>
@@ -82,12 +99,10 @@ const Donors = () => {
               <td><a href={`mailto:${donor.donor_email}`}>{donor.donor_email}</a></td>
               <td><a href={`tel:${donor.donor_phone}`}>{donor.donor_phone}</a></td>
               <td>
-                <button
-                  className='btn btn-danger btn-sm'
-                  onClick={() => handleDelete(donor.id)}
-                >
-                  Delete
-                </button>
+                <div className='d-flex justify-content-center align-items-center gap-2 mb-4'>
+                  <button className='btn btn-primary btn-sm' onClick={() => navigate(`/?donor_id=${donor.id}`)}>View Scl</button>
+                  <button className='btn btn-danger btn-sm' onClick={() => handleDelete(donor.id)}>Delete</button>
+                </div>
               </td>
             </tr>
           ))}

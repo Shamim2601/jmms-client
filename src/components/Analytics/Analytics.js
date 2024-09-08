@@ -70,12 +70,11 @@ const Analytics = () => {
         const disbursementsData = await disbursementsResponse.json();
 
         let totalDisbursedAmount = 0;
-        for (const disbursement of disbursementsData) {
-          const scholarship = scholarshipsData.find(sch => sch.id === disbursement.scholarship_id);
-          if (scholarship) {
-            totalDisbursedAmount += parseFloat(scholarship.monthly_amount);
+        disbursementsData.forEach(disbursement => {
+          if(disbursement.amount){
+            totalDisbursedAmount += parseFloat(disbursement.amount);
           }
-        }
+        });
 
         setTotalDisbursed(totalDisbursedAmount);
 

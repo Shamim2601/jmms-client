@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const Disbursements = () => {
+  const navigate = useNavigate();
   const [disbursements, setDisbursements] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [date, setDate] = useState('');
   const [remark, setRemark] = useState('');
+  const [scholarship, setScholarship] = useState([]);
   const location = useLocation();
   const rooturl = process.env.REACT_APP_ROOTURL;
+  // Extract the 'scl_id' query parameter from the URL
+  const params = new URLSearchParams(location.search);
+  const scholarshipId = params.get('scl_id');
 
   useEffect(() => {
-    // Extract the 'scl_id' query parameter from the URL
-    const params = new URLSearchParams(location.search);
-    const scholarshipId = params.get('scl_id');
-
     // Fetch disbursements from the server
     fetch(rooturl+'disbursements')
       .then(response => response.json())
@@ -25,7 +26,15 @@ const Disbursements = () => {
         setDisbursements(filteredDisbursements);
       })
       .catch(error => console.error('Error fetching disbursements:', error));
-  }, [location.search, rooturl]);
+
+      // Fetch scholarship from the server
+    fetch(rooturl+`scholarships/${scholarshipId}`)
+    .then(response => response.json())
+    .then(data => {
+      setScholarship(data);
+    })
+    .catch(error => console.error('Error fetching scholarship:', error));
+  }, [location.search, rooturl, scholarshipId]);
 
   const handleAddClick = () => {
     setShowModal(true);
@@ -36,13 +45,12 @@ const Disbursements = () => {
   };
 
   const handleAddDisbursement = () => {
-    // Extract the 'scl_id' query parameter from the URL
-    const params = new URLSearchParams(location.search);
-    const scholarshipId = params.get('scl_id');
-
     // Create the new disbursement object
     const newDisbursement = {
       scholarship_id: parseInt(scholarshipId),
+      donor_id: parseInt(scholarship.donor_id),
+      student_id: parseInt(scholarship.student_id),
+      amount: parseFloat(scholarship.monthly_amount),
       date,
       remark
     };
@@ -90,7 +98,7 @@ const Disbursements = () => {
     <div className='container mt-4'>
       <div className='d-flex justify-content-center align-items-center mb-4'>
         <h1 className='mb-0'>Disbursements</h1>
-        <span className='badge bg-primary fs-5 ms-4'>{disbursements.length} Total</span>
+        <span className='badge bg-secondary fs-5 ms-4'>{disbursements.length} Total</span>
         <button 
           className='btn btn-primary ms-4'
           onClick={handleAddClick}
@@ -98,12 +106,18 @@ const Disbursements = () => {
           Add New
         </button>
       </div>
+      <div className='d-flex justify-content-center align-items-center mb-4'>
+        <h3 className='mb-0'>Scholarship</h3>
+        <button className='btn btn-primary ms-2' onClick={()=>navigate(`/?scl_id=${scholarshipId}`)}>ID: {scholarshipId}</button>
+      </div>
 
       <table className='table table-striped table-bordered'>
         <thead className='thead-dark'>
           <tr>
             <th>ID</th>
-            <th>Scl ID</th>
+            <th>Donor ID</th>
+            <th>Student ID</th>
+            <th>Amount</th>
             <th>Date</th>
             <th>Remark</th>
             <th>Actions</th>
@@ -113,7 +127,13 @@ const Disbursements = () => {
           {disbursements.map(disbursement => (
             <tr key={disbursement.id}>
               <td>{disbursement.id}</td>
-              <td>{disbursement.scholarship_id}</td>
+              <td>
+                <button className='btn btn-primary' onClick={()=>navigate(`/donors/?id=${disbursement.donor_id}`)}>{disbursement.donor_id}</button>
+              </td>
+              <td>
+              <button className='btn btn-primary' onClick={()=>navigate(`/students/?id=${disbursement.student_id}`)}>{disbursement.student_id}</button>
+              </td>
+              <td>{disbursement.amount}</td>
               <td>{disbursement.date}</td>
               <td>{disbursement.remark}</td>
               <td>
